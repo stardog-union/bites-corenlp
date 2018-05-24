@@ -1,0 +1,30 @@
+group 'com.complexible.stardog.docs.corenlp'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+ext {
+	stardogVersion = '5.3.0'
+	corenlpVersion = '3.9.1'
+	junitVersion = '4.12'
+}
+
+repositories {
+    maven { url 'http://maven.stardog.com' }
+    mavenCentral()
+}
+
+dependencies {
+	compile group: 'com.complexible.stardog', name: 'server', version: stardogVersion
+	compile group: 'com.complexible.stardog', name: 'client-http', version: stardogVersion
+	compile group: 'com.complexible.stardog', name: 'client-embedded', version: stardogVersion
+	compile group: 'com.complexible.stardog', name: 'stardog-stardocs-protocols-embedded', version: stardogVersion
+
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: corenlpVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models', version: corenlpVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english', version: corenlpVersion
+
+    testCompile group: 'junit', name: 'junit', version: junitVersion
+}

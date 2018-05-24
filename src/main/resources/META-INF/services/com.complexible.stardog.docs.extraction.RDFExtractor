@@ -1,0 +1,3 @@
+com.complexible.stardog.docs.corenlp.CoreNLPEntityLinkerRDFExtractor
+com.complexible.stardog.docs.corenlp.CoreNLPMentionRDFExtractor
+com.complexible.stardog.docs.corenlp.CoreNLPRelationRDFExtractor
