@@ -14,18 +14,35 @@ import org.openrdf.model.IRI;
 import org.openrdf.model.Model;
 
 /**
+ * {@link BasicMentionExtractor} using {@link CoreNLPDocumentParser}
+ *
+ * <pre>
+ * {@code
+ *
+ * "The Orioles are a team based in Baltimore"
+ *
+ * iri:1    rdfs:label "Orioles" ;
+ *          a ner:organization .
+ * iri:2    rdfs:label "Baltimore" ;
+ *          a ner:city .
+ *
+ * }
+ * </pre>
+ *
  * @author Pedro Oliveira
- * @version 5.2.4
- * @since 5.2.4
  */
 public class CoreNLPMentionRDFExtractor extends AbstractEntityRDFExtractor {
 
 	@Override
 	protected StatementSource extractFromText(final Connection theConnection, final IRI theDocIri, final Reader theText) throws Exception {
-		BasicMentionExtractor aExtractor = new BasicMentionExtractor(new CoreNLPDocumentParser(), new NERMentionExtractor());
+		BasicMentionExtractor aExtractor = new BasicMentionExtractor(
+			new CoreNLPDocumentParser(),    // parser
+			new NERMentionExtractor()       // mention extractor
+		);
+
+		Model aModel = Models2.newModel();
 
 		// add each entity to model
-		Model aModel = Models2.newModel();
 		for (Span aEntity : aExtractor.extract(theText)) {
 			addEntity(aModel, theDocIri, aEntity, false, true);
 		}

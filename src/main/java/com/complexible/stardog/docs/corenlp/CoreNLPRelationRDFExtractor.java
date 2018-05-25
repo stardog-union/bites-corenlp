@@ -26,14 +26,29 @@ import org.openrdf.model.vocabulary.RDFS;
 import static com.complexible.common.rdf.model.Values.literal;
 
 /**
+ * Uses {@link StanfordCoreNLP} to extract relations from text.
+ *
+ * <pre>
+ * {@code
+ *
+ * "The Orioles are a team based in Baltimore"
+ *
+ * iri:1 rdfs:label "Orioles"
+ * iri:2 rdfs:label "Baltimore"
+ * iri:1 relation:org:city_of_headquarters iri:2
+ *
+ * }
+ * </pre>
+ *
  * @author Pedro Oliveira
- * @version 5.2.4
- * @since 5.2.4
  */
 public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 
 	private static StanfordCoreNLP PIPELINE;
 
+	/**
+	 * Lazily load the {@link StanfordCoreNLP} pipeline
+	 */
 	private synchronized static StanfordCoreNLP getPipeline() {
 		if (PIPELINE == null) {
 			Properties aProps = new Properties();
@@ -62,8 +77,11 @@ public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 				IRI aPred = relation(aPredStr);
 				IRI aObj = mention(aObjStr);
 
+				// add label to each entity
 				aModel.add(aSubj, RDFS.LABEL, literal(aSubjStr));
 				aModel.add(aObj, RDFS.LABEL, literal(aObjStr));
+
+				// add triple with relation
 				aModel.add(aSubj, aPred, aObj);
 			}
 		}

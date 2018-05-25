@@ -10,8 +10,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * @author Pedro Oliveira
- * @version 5.2.4
- * @since 5.2.4
  */
 public class CoreNLPDocumentParserTest {
 

@@ -13,14 +13,17 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
 
 /**
+ * Transform a {@link String} into a {@link Document} using {@link StanfordCoreNLP}
+ *
  * @author Pedro Oliveira
- * @version 5.2.4
- * @since 5.2.4
  */
 public class CoreNLPDocumentParser implements DocumentParser {
 
 	private static StanfordCoreNLP PIPELINE;
 
+	/**
+	 * Lazily load the {@link StanfordCoreNLP} pipeline
+	 */
 	private synchronized static StanfordCoreNLP getPipeline() {
 		if (PIPELINE == null) {
 			Properties aProps = new Properties();
@@ -54,7 +57,6 @@ public class CoreNLPDocumentParser implements DocumentParser {
 			for (CoreLabel aLabel: aSentence.tokens()) {
 				aTokens[aTokenID++] = new Token(aDoc, aSentenceID, aLabel.word());
 			}
-
 
 			for (CoreEntityMention aMention: aSentence.entityMentions()) {
 				for (CoreLabel aLabel: aMention.tokens()) {
