@@ -16,14 +16,27 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+	localDeps
+}
+
 dependencies {
 	compile group: 'com.complexible.stardog', name: 'server', version: stardogVersion
 	compile group: 'com.complexible.stardog', name: 'client-http', version: stardogVersion
 	compile group: 'com.complexible.stardog', name: 'client-embedded', version: stardogVersion
 
-	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: corenlpVersion
-	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models', version: corenlpVersion
-	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english', version: corenlpVersion
+	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: corenlpVersion
+	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models', version: corenlpVersion
+	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english', version: corenlpVersion
+
+	compile configurations.localDeps
 
     testCompile group: 'junit', name: 'junit', version: junitVersion
 }
+
+task copyDeps(type: Copy) {
+	into "$buildDir/libs"
+	from configurations.localDeps
+}
+
+build.dependsOn(copyDeps)
