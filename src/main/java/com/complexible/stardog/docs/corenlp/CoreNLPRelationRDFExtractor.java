@@ -42,6 +42,7 @@ import org.openrdf.model.Model;
 import org.openrdf.model.vocabulary.RDFS;
 
 import static com.complexible.common.rdf.model.Values.literal;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Uses {@link StanfordCoreNLP} to extract relations from text.
@@ -108,7 +109,7 @@ public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 	}
 
 	private static String toString(List<CoreLabel> theLabels) {
-		return theLabels.stream().map(CoreLabel::word).collect(Collectors.joining(" "));
+		return theLabels.stream().map(CoreLabel::word).collect(joining(" "));
 	}
 
 	private static IRI mention(String theEntity) {
