@@ -21,15 +21,19 @@ package com.complexible.stardog.docs.corenlp;
 import java.io.Reader;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
-import com.complexible.common.openrdf.model.Models2;
 import com.complexible.common.rdf.StatementSource;
 import com.complexible.common.rdf.impl.MemoryStatementSource;
 import com.complexible.stardog.api.Connection;
-import com.complexible.stardog.docs.StardocsVocabulary;
+import com.complexible.stardog.docs.BitesVocabulary;
 import com.complexible.stardog.docs.extraction.tika.TextProvidingRDFExtractor;
+import com.stardog.stark.IRI;
+import com.stardog.stark.Statement;
+import com.stardog.stark.Values;
+import com.stardog.stark.vocabs.RDFS;
+
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import edu.stanford.nlp.ie.util.RelationTriple;
@@ -37,11 +41,9 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
-import org.openrdf.model.vocabulary.RDFS;
 
-import static com.complexible.common.rdf.model.Values.literal;
+import static com.stardog.stark.Values.literal;
+import static com.stardog.stark.Values.statement;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -84,7 +86,7 @@ public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 		CoreDocument aDoc = new CoreDocument(CharStreams.toString(theReader));
 		getPipeline().annotate(aDoc);
 
-		Model aModel = Models2.newModel();
+		ImmutableSet.Builder<Statement> aGraphBuilder = ImmutableSet.builder();
 
 		for (CoreSentence aSentence: aDoc.sentences()) {
 			for (RelationTriple aRelation: aSentence.relations()) {
@@ -97,15 +99,15 @@ public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 				IRI aObj = mention(aObjStr);
 
 				// add label to each entity
-				aModel.add(aSubj, RDFS.LABEL, literal(aSubjStr));
-				aModel.add(aObj, RDFS.LABEL, literal(aObjStr));
+				aGraphBuilder.add(statement(aSubj, RDFS.LABEL, literal(aSubjStr)));
+				aGraphBuilder.add(statement(aObj, RDFS.LABEL, literal(aObjStr)));
 
 				// add triple with relation
-				aModel.add(aSubj, aPred, aObj);
+				aGraphBuilder.add(statement(aSubj, aPred, aObj));
 			}
 		}
 
-		return MemoryStatementSource.of(aModel);
+		return MemoryStatementSource.of(aGraphBuilder.build());
 	}
 
 	private static String toString(List<CoreLabel> theLabels) {
@@ -113,11 +115,14 @@ public class CoreNLPRelationRDFExtractor extends TextProvidingRDFExtractor {
 	}
 
 	private static IRI mention(String theEntity) {
-		return StardocsVocabulary.ontology().term("entity:" + Hashing.murmur3_128().hashString(theEntity, Charsets.UTF_8).toString());
+		return term("entity:" + Hashing.murmur3_128().hashString(theEntity, Charsets.UTF_8).toString());
 	}
 
 	private static IRI relation(String theRelation) {
-		return StardocsVocabulary.ontology().term("relation:" + theRelation);
+		return term("relation:" + theRelation);
 	}
 
+	private static IRI term(final String theTerm) {
+		return Values.iri(BitesVocabulary.NS + theTerm);
+	}
 }

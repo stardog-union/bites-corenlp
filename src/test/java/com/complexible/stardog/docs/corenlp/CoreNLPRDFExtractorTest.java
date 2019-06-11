@@ -26,8 +26,14 @@ import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.ConnectionConfiguration;
 import com.complexible.stardog.api.admin.AdminConnection;
 import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
-import com.complexible.stardog.docs.StardocsConnection;
+import com.complexible.stardog.docs.BitesConnection;
 import com.complexible.stardog.search.SearchOptions;
+import com.stardog.stark.IRI;
+import com.stardog.stark.Value;
+import com.stardog.stark.query.BindingSet;
+import com.stardog.stark.query.SelectQueryResult;
+import com.stardog.stark.vocabs.RDFS;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -35,13 +41,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.openrdf.model.IRI;
-import org.openrdf.model.vocabulary.RDFS;
-import org.openrdf.query.BindingSet;
-import org.openrdf.query.TupleQueryResult;
 
-import static com.complexible.common.rdf.model.Values.iri;
-import static com.complexible.common.rdf.model.Values.literal;
+import static com.stardog.stark.Values.iri;
+import static com.stardog.stark.Values.literal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -91,7 +93,7 @@ public class CoreNLPRDFExtractorTest {
 			                        .to(DB)
 			                        .credentials("admin", "admin")
 			                        .connect()) {
-			StardocsConnection aDocsConn = aConn.as(StardocsConnection.class);
+			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
@@ -108,27 +110,27 @@ public class CoreNLPRDFExtractorTest {
 			                "       ?entity rdfs:label ?label " +
 			                "   }" +
 			                "}";
-			TupleQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute();
+			try (SelectQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute()) {
 
-			Set<String> aEntities = Sets.newHashSet();
-			while (aRes.hasNext()) {
-				aEntities.add(aRes.next().getBinding("label").getValue().stringValue());
+				Set<String> aEntities = Sets.newHashSet();
+				while (aRes.hasNext()) {
+					aEntities.add(Value.lex(aRes.next().binding("label").get().value()));
+				}
+
+				assertEquals(
+						ImmutableSet.of(
+								"Baltimore",
+								"United States",
+								"Maryland",
+								"Baltimore Orioles",
+								"Eastern Division of Major League Baseball 's American League")
+						, aEntities);
 			}
-
-			assertEquals(
-				ImmutableSet.of(
-					"Baltimore",
-					"United States",
-					"Maryland",
-					"Baltimore Orioles",
-					"Eastern Division of Major League Baseball 's American League")
-				, aEntities);
 		}
 	}
 
 	@Test
 	public void testEntityLinker() throws Exception {
-
 		IRI aBaltimore = iri("urn:Baltimore");
 
 		try (Connection aConn = ConnectionConfiguration
@@ -146,7 +148,7 @@ public class CoreNLPRDFExtractorTest {
 			                        .credentials("admin", "admin")
 			                        .connect()) {
 
-			StardocsConnection aDocsConn = aConn.as(StardocsConnection.class);
+			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
@@ -164,13 +166,13 @@ public class CoreNLPRDFExtractorTest {
 			                "               rdfs:label ?label . " +
 			                "   }" +
 			                "}";
-			TupleQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute();
+			try (SelectQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute()) {
+				BindingSet aBindings = aRes.next();
 
-			BindingSet aBindings = aRes.next();
-
-			assertEquals(aBaltimore, aBindings.getValue("ref"));
-			assertEquals(literal("Baltimore"), aBindings.getValue("label"));
-			assertFalse(aRes.hasNext());
+				assertEquals(aBaltimore, aBindings.binding("ref").get().get());
+				assertEquals(literal("Baltimore"), aBindings.binding("label").get().value());
+				assertFalse(aRes.hasNext());
+			}
 		}
 	}
 
@@ -180,7 +182,7 @@ public class CoreNLPRDFExtractorTest {
 			                        .to(DB)
 			                        .credentials("admin", "admin")
 			                        .connect()) {
-			StardocsConnection aDocsConn = aConn.as(StardocsConnection.class);
+			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
@@ -199,25 +201,25 @@ public class CoreNLPRDFExtractorTest {
 			                "}" +
 			                "order by ?objLabel";
 
-			TupleQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute();
+			try (SelectQueryResult aRes = aConn.select(aQuery).parameter("doc", aDocIri).execute()) {
+				// assert extracted relations
+				BindingSet aBindings = aRes.next();
+				assertEquals("Baltimore Orioles", Value.lex(aBindings.binding("subjLabel").get().value()));
+				assertEquals(iri("tag:stardog:api:docs:relation:org:city_of_headquarters"), aBindings.binding("pred").get().value());
+				assertEquals("Baltimore", Value.lex(aBindings.binding("objLabel").get().value()));
 
-			// assert extracted relations
-			BindingSet aBindings = aRes.next();
-			assertEquals("Baltimore Orioles", aBindings.getValue("subjLabel").stringValue());
-			assertEquals(iri("tag:stardog:api:docs:relation:org:city_of_headquarters"), aBindings.getValue("pred"));
-			assertEquals("Baltimore", aBindings.getValue("objLabel").stringValue());
+				aBindings = aRes.next();
+				assertEquals("Baltimore Orioles", Value.lex(aBindings.binding("subjLabel").get().value()));
+				assertEquals(iri("tag:stardog:api:docs:relation:org:stateorprovince_of_headquarters"), aBindings.binding("pred").get().value());
+				assertEquals("Maryland", Value.lex(aBindings.binding("objLabel").get().value()));
 
-			aBindings = aRes.next();
-			assertEquals("Baltimore Orioles", aBindings.getValue("subjLabel").stringValue());
-			assertEquals(iri("tag:stardog:api:docs:relation:org:stateorprovince_of_headquarters"), aBindings.getValue("pred"));
-			assertEquals("Maryland", aBindings.getValue("objLabel").stringValue());
+				aBindings = aRes.next();
+				assertEquals("Baltimore Orioles", Value.lex(aBindings.binding("subjLabel").get().value()));
+				assertEquals(iri("tag:stardog:api:docs:relation:org:country_of_headquarters"), aBindings.binding("pred").get().value());
+				assertEquals("United States", Value.lex(aBindings.binding("objLabel").get().value()));
 
-			aBindings = aRes.next();
-			assertEquals("Baltimore Orioles", aBindings.getValue("subjLabel").stringValue());
-			assertEquals(iri("tag:stardog:api:docs:relation:org:country_of_headquarters"), aBindings.getValue("pred"));
-			assertEquals("United States", aBindings.getValue("objLabel").stringValue());
-
-			assertFalse(aRes.hasNext());
+				assertFalse(aRes.hasNext());
+			}
 		}
 	}
 }

@@ -19,8 +19,8 @@
 package com.complexible.stardog.docs.corenlp;
 
 import java.io.Reader;
+import java.util.Set;
 
-import com.complexible.common.openrdf.model.Models2;
 import com.complexible.common.rdf.StatementSource;
 import com.complexible.common.rdf.impl.MemoryStatementSource;
 import com.complexible.stardog.api.Connection;
@@ -31,10 +31,12 @@ import com.complexible.stardog.docs.nlp.impl.EntityLinker;
 import com.complexible.stardog.docs.nlp.impl.MaxRanking;
 import com.complexible.stardog.docs.nlp.impl.NERMentionExtractor;
 import com.complexible.stardog.docs.nlp.impl.TopThresholdSelector;
+import com.stardog.stark.IRI;
+import com.stardog.stark.Resource;
+import com.stardog.stark.Statement;
+
 import com.google.common.collect.Multimap;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
-import org.openrdf.model.Resource;
+import com.google.common.collect.Sets;
 
 /**
  * {@link EntityLinker} using {@link CoreNLPDocumentParser}
@@ -57,7 +59,6 @@ public class CoreNLPEntityLinkerRDFExtractor extends AbstractEntityRDFExtractor 
 
 	@Override
 	protected StatementSource extractFromText(final Connection theConnection, final IRI theDocIri, final Reader theReader) throws Exception {
-
 		EntityLinker aLinker =  new EntityLinker(
 			new CoreNLPDocumentParser(),                            // parser
 			new NERMentionExtractor(),                              // mention extractor
@@ -65,16 +66,15 @@ public class CoreNLPEntityLinkerRDFExtractor extends AbstractEntityRDFExtractor 
 			new DefaultCandidateFeatureGenerator(theConnection),    // candidate and feature generator
 			c -> {},                                                // feature generator (no-op, subsumed by DefaultCandidateFeatureGenerator)
 			new MaxRanking(),                                       // ranking function
-			new TopThresholdSelector(0.95)                          // candidate selector
+			new TopThresholdSelector(0.95)              // candidate selector
 		);
 
 		Multimap<Span, Resource> aOutput = aLinker.extract(theReader);
-
-		Model aModel = Models2.newModel();
+		Set<Statement> aGraph = Sets.newHashSet();
 
 		// add each entity and its links to the model
-		aOutput.asMap().forEach((aEntity, aValues) -> addEntity(aModel, theDocIri, aEntity, false, true, aValues));
+		aOutput.asMap().forEach((aEntity, aValues) -> addEntity(aGraph, theDocIri, aEntity, false, true, aValues));
 
-		return MemoryStatementSource.of(aModel);
+		return MemoryStatementSource.of(aGraph);
 	}
 }

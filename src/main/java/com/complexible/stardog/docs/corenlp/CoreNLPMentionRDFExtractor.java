@@ -19,8 +19,8 @@
 package com.complexible.stardog.docs.corenlp;
 
 import java.io.Reader;
+import java.util.Set;
 
-import com.complexible.common.openrdf.model.Models2;
 import com.complexible.common.rdf.StatementSource;
 import com.complexible.common.rdf.impl.MemoryStatementSource;
 import com.complexible.stardog.api.Connection;
@@ -28,8 +28,10 @@ import com.complexible.stardog.docs.nlp.Span;
 import com.complexible.stardog.docs.nlp.impl.AbstractEntityRDFExtractor;
 import com.complexible.stardog.docs.nlp.impl.BasicMentionExtractor;
 import com.complexible.stardog.docs.nlp.impl.NERMentionExtractor;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
+import com.stardog.stark.IRI;
+import com.stardog.stark.Statement;
+
+import com.google.common.collect.Sets;
 
 /**
  * {@link BasicMentionExtractor} using {@link CoreNLPDocumentParser}
@@ -58,13 +60,13 @@ public class CoreNLPMentionRDFExtractor extends AbstractEntityRDFExtractor {
 			new NERMentionExtractor()       // mention extractor
 		);
 
-		Model aModel = Models2.newModel();
+		Set<Statement> aGraph = Sets.newHashSet();
 
 		// add each entity to model
 		for (Span aEntity : aExtractor.extract(theText)) {
-			addEntity(aModel, theDocIri, aEntity, false, true);
+			addEntity(aGraph, theDocIri, aEntity, false, true);
 		}
 
-		return MemoryStatementSource.of(aModel);
+		return MemoryStatementSource.of(aGraph);
 	}
 }
