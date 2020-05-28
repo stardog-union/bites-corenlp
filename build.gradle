@@ -1,12 +1,15 @@
+plugins {
+	id 'com.github.johnrengelman.shadow' version '5.2.0'
+	id 'java'
+}
+
 group 'com.complexible.stardog.docs.corenlp'
 version '1.2'
-
-apply plugin: 'java'
 
 sourceCompatibility = 1.8
 
 ext {
-	stardogVersion = '7.0.2'
+	stardogVersion = '7.3.0'
 	corenlpVersion = '3.9.1'
 	junitVersion = '4.12'
 }
@@ -18,36 +21,29 @@ repositories {
 }
 
 configurations {
-	localDeps
+    localDeps
 }
 
 dependencies {
-	compile group: 'com.complexible.stardog', name: 'server', version: stardogVersion
-	compile group: 'com.complexible.stardog', name: 'client-http', version: stardogVersion
+	compileOnly group: 'com.complexible.stardog', name: 'server', version: stardogVersion
+	compileOnly group: 'com.complexible.stardog', name: 'client-http', version: stardogVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: corenlpVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models', version: corenlpVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english', version: corenlpVersion
+	compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english-kbp', version: corenlpVersion
 
-	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: corenlpVersion
-	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models', version: corenlpVersion
-	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english', version: corenlpVersion
-	localDeps group: 'edu.stanford.nlp', name: 'stanford-corenlp', classifier: 'models-english-kbp', version: corenlpVersion
-
-	compile configurations.localDeps
-
-    testCompile group: 'junit', name: 'junit', version: junitVersion
-	testCompile group: 'com.complexible.stardog', name: 'client-embedded', version: stardogVersion
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+	testImplementation group: 'com.complexible.stardog', name: 'client-embedded', version: stardogVersion
 }
 
-task copyDeps(type: Copy) {
-	into "$buildDir/libs"
-	from configurations.localDeps
-}
-
-task fatJar(type: Jar) {
-	baseName = project.name + '-all'
-	from { configurations.localDeps.collect { it.isDirectory() ? it : zipTree(it) } }
-	with jar
+shadowJar {
+	relocate 'org.apache.lucene', 'shadow.org.apache.lucene'
+	mergeServiceFiles()
 }
 
 test {
-	systemProperty "stardog.home", System.getProperty("stardog.home")
+	systemProperty 'stardog.home', System.getProperty('stardog.home')
+	systemProperty 'java.library.path', System.getProperty('stardog.home') + "/lib"
 	maxHeapSize = "8g"
 }
+
