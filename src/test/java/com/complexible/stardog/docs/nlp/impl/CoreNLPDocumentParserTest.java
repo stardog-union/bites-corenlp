@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.complexible.stardog.docs.corenlp;
+package com.complexible.stardog.docs.nlp.impl;
 
 import java.util.Arrays;
 
