@@ -16,18 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.complexible.stardog.docs.corenlp;
+package com.complexible.stardog.docs.nlp.impl;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
 import com.complexible.common.rdf.StatementSource;
 import com.complexible.common.rdf.impl.MemoryStatementSource;
 import com.complexible.stardog.api.Connection;
-import com.complexible.stardog.docs.nlp.Span;
-import com.complexible.stardog.docs.nlp.impl.AbstractEntityRDFExtractor;
-import com.complexible.stardog.docs.nlp.impl.BasicMentionExtractor;
-import com.complexible.stardog.docs.nlp.impl.NERMentionExtractor;
+import com.complexible.stardog.docs.nlp.EntityExtractor;
+import com.complexible.stardog.docs.nlp.Spans;
 import com.stardog.stark.IRI;
 import com.stardog.stark.Statement;
 
@@ -63,10 +62,14 @@ public class CoreNLPMentionRDFExtractor extends AbstractEntityRDFExtractor {
 		Set<Statement> aGraph = Sets.newHashSet();
 
 		// add each entity to model
-		for (Span aEntity : aExtractor.extract(theText)) {
-			addEntity(aGraph, theDocIri, aEntity, false, true);
-		}
+		Spans aSpans = aExtractor.extract(theText);
+		aSpans.stream().forEach(aEntity -> addEntity(aGraph, theDocIri, aEntity, false, true, aSpans.getLinkedEntities(aEntity)));
 
 		return MemoryStatementSource.of(aGraph);
+	}
+
+	@Override
+	EntityExtractor<Spans> getExtractor(Connection theConnection) throws IOException {
+		return BasicMentionExtractor.getDefault(theConnection);
 	}
 }

@@ -16,26 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.complexible.stardog.docs.corenlp;
+package com.complexible.stardog.docs.nlp.impl;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
 import com.complexible.common.rdf.StatementSource;
 import com.complexible.common.rdf.impl.MemoryStatementSource;
 import com.complexible.stardog.api.Connection;
-import com.complexible.stardog.docs.nlp.Span;
-import com.complexible.stardog.docs.nlp.impl.AbstractEntityRDFExtractor;
-import com.complexible.stardog.docs.nlp.impl.DefaultCandidateFeatureGenerator;
-import com.complexible.stardog.docs.nlp.impl.EntityLinker;
-import com.complexible.stardog.docs.nlp.impl.MaxRanking;
-import com.complexible.stardog.docs.nlp.impl.NERMentionExtractor;
-import com.complexible.stardog.docs.nlp.impl.TopThresholdSelector;
+import com.complexible.stardog.docs.nlp.EntityExtractor;
+import com.complexible.stardog.docs.nlp.Spans;
 import com.stardog.stark.IRI;
-import com.stardog.stark.Resource;
 import com.stardog.stark.Statement;
 
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 /**
@@ -69,12 +63,18 @@ public class CoreNLPEntityLinkerRDFExtractor extends AbstractEntityRDFExtractor 
 			new TopThresholdSelector(0.95)              // candidate selector
 		);
 
-		Multimap<Span, Resource> aOutput = aLinker.extract(theReader);
 		Set<Statement> aGraph = Sets.newHashSet();
 
 		// add each entity and its links to the model
-		aOutput.asMap().forEach((aEntity, aValues) -> addEntity(aGraph, theDocIri, aEntity, false, true, aValues));
+		final Spans aSpans = aLinker.extract(theReader);
+
+		aSpans.stream().forEach(aEntity -> addEntity(aGraph, theDocIri, aEntity, false, true, aSpans.getLinkedEntities(aEntity)));
 
 		return MemoryStatementSource.of(aGraph);
+	}
+
+	@Override
+	public EntityExtractor<Spans> getExtractor(Connection theConnection) throws IOException {
+		return BasicMentionExtractor.getDefault(theConnection);
 	}
 }
