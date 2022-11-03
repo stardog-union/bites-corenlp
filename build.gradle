@@ -34,6 +34,7 @@ dependencies {
 
     testImplementation group: 'junit', name: 'junit', version: junitVersion
 	testImplementation group: 'com.complexible.stardog', name: 'client-embedded', version: stardogVersion
+	testImplementation group: 'com.complexible.stardog.bites.http', name: 'stardog-bites-protocols-http-client', version: stardogVersion
 }
 
 shadowJar {
