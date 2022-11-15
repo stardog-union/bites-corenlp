@@ -43,6 +43,6 @@ CoreNLP models can consume large amounts of system memory. If greeted with a `GC
 ## Advanced Usage
 
 1. Tweak `build.gradle` to the [language of your choice](https://stanfordnlp.github.io/CoreNLP/download.html) (e.g., change CoreNLP dependency to `models-spanish`)
-2. Run `gradlew clean fatjar` for a single jar, or `gradlew clean copyDeps` for individual dependencies
+2. Run `gradlew clean shadowJar` for a single jar, or `gradlew clean copyDeps` for individual dependencies
 3. Add files in `build/libs` to Stardog's [classpath](https://www.stardog.com/docs/#_extending_stardog)
 4. Restart the Stardog server

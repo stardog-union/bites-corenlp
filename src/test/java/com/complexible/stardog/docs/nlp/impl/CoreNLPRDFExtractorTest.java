@@ -21,12 +21,12 @@ package com.complexible.stardog.docs.nlp.impl;
 import java.io.FileInputStream;
 import java.util.Set;
 
-import com.complexible.stardog.Stardog;
 import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.ConnectionConfiguration;
 import com.complexible.stardog.api.admin.AdminConnection;
 import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
-import com.complexible.stardog.docs.BitesConnection;
+import com.complexible.stardog.protocols.http.client.HttpConnection;
+import com.complexible.stardog.protocols.http.docs.client.HttpBitesConnection;
 import com.complexible.stardog.search.SearchOptions;
 import com.stardog.stark.IRI;
 import com.stardog.stark.Value;
@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,34 +52,25 @@ import static org.junit.Assert.assertFalse;
 public class CoreNLPRDFExtractorTest {
 	private static final String DB = "testExtractor";
 
-	private static Stardog stardog;
+	private static ConnectionConfiguration mConnectionConfiguration;
 
 	@BeforeClass
-	public static void beforeClass() throws Exception {
-		stardog = Stardog.builder().create();
+	public static void beforeClass() {
 
-		try (AdminConnection aConn = AdminConnectionConfiguration.toEmbeddedServer()
+		try (AdminConnection aConn = AdminConnectionConfiguration.toServer("http://localhost:5820")
 		                                                         .credentials("admin", "admin")
 		                                                         .connect()) {
 			if (aConn.list().contains(DB)) {
 				aConn.drop(DB);
 			}
 
-			aConn.newDatabase(DB).set(SearchOptions.SEARCHABLE, true).create();
+			mConnectionConfiguration = aConn.newDatabase(DB).set(SearchOptions.SEARCHABLE, true).create();
 		}
-	}
-
-	@AfterClass
-	public static void afterClass() throws Exception {
-		stardog.shutdown();
 	}
 
 	@After
 	public void clear() {
-		try (Connection aConn = ConnectionConfiguration
-			                        .to(DB)
-			                        .credentials("admin", "admin")
-			                        .connect()) {
+		try (Connection aConn = mConnectionConfiguration.connect()) {
 			aConn.begin();
 			aConn.remove().all();
 			aConn.commit();
@@ -89,11 +79,8 @@ public class CoreNLPRDFExtractorTest {
 
 	@Test
 	public void testMentionExtractor() throws Exception {
-		try (Connection aConn = ConnectionConfiguration
-			                        .to(DB)
-			                        .credentials("admin", "admin")
-			                        .connect()) {
-			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
+		try (Connection aConn = mConnectionConfiguration.connect()) {
+			HttpBitesConnection aDocsConn = new HttpBitesConnection(aConn.as(HttpConnection.class));
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
@@ -133,22 +120,16 @@ public class CoreNLPRDFExtractorTest {
 	public void testEntityLinker() throws Exception {
 		IRI aBaltimore = iri("urn:Baltimore");
 
-		try (Connection aConn = ConnectionConfiguration
-			                        .to(DB)
-			                        .credentials("admin", "admin")
-			                        .connect()) {
+		try (Connection aConn = mConnectionConfiguration.connect()) {
 
 			aConn.begin();
 			aConn.add().statement(aBaltimore, RDFS.LABEL, literal("Baltimore"));
 			aConn.commit();
 		}
 
-		try (Connection aConn = ConnectionConfiguration
-			                        .to(DB)
-			                        .credentials("admin", "admin")
-			                        .connect()) {
+		try (Connection aConn = mConnectionConfiguration.connect()) {
 
-			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
+			HttpBitesConnection aDocsConn = new HttpBitesConnection(aConn.as(HttpConnection.class));
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
@@ -178,11 +159,8 @@ public class CoreNLPRDFExtractorTest {
 
 	@Test
 	public void testRelationExtractor() throws Exception {
-		try (Connection aConn = ConnectionConfiguration
-			                        .to(DB)
-			                        .credentials("admin", "admin")
-			                        .connect()) {
-			BitesConnection aDocsConn = aConn.as(BitesConnection.class);
+		try (Connection aConn = mConnectionConfiguration.connect()) {
+			HttpBitesConnection aDocsConn = new HttpBitesConnection(aConn.as(HttpConnection.class));
 
 			// add document
 			IRI aDocIri = aDocsConn.putDocument(
